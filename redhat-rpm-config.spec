@@ -1,15 +1,15 @@
 #                        TO WHOM IT MAY CONCERN
 #
-# 1) Don't add patches, dist-git is the upstream repository for this package.
-# 2) When making changes, increment the version (in baserelease) by 1.
-#    rpmdev-bumpspec and other tools update the macro below, which is used
-#    in Version: to get the desired effect.
-%global baserelease 300
+# Don't add patches, dist-git is the upstream repository for this package.
 
 Summary: Red Hat-family-specific rpm configuration files
 Name: redhat-rpm-config
-Version: %{baserelease}
-Release: 1%{?dist}
+# The version should be 300 + Fedora release number.
+# If the branches haven't diverged yet, keep the Fedora release number from
+# the older branch. When the branch diverges, bump the Version to the Fedora
+# release number.
+Version: 342
+Release: %autorelease
 # config.guess, config.sub are GPL-3.0-or-later WITH Autoconf-exception-generic
 License: GPL-1.0-or-later AND GPL-2.0-or-later AND GPL-3.0-or-later WITH Autoconf-exception-generic AND Boehm-GC
 URL: https://src.fedoraproject.org/rpms/redhat-rpm-config
