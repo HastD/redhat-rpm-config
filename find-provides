@@ -1,37 +1,3 @@
-#!/bin/bash
+#!/bin/sh
 
-# This script reads filenames from STDIN and outputs any relevant provides
-# information that needs to be included in the package.
-
-# Read stdin, backslash-quoting ' and "
-filelist=`sed "s/['\"]/\\\&/g"`
-
-# If nothing was given, do nothing
-[ "$filelist" ] || exit 0
-
-[ -x /usr/lib/rpm/rpmdeps ] &&
-    printf "%s\n" "$filelist" | tr '[:blank:]' \\n | /usr/lib/rpm/rpmdeps --provides
-# (why are we replacing witespace with newlines?)
-
-# Run any other extra find-provides scripts
-for i in /usr/lib/rpm/redhat/find-provides.d/*.prov; do
-    [ -x $i ] || continue
-    printf "%s\n" "$filelist" | tr '[:blank:]' \\n | $i | sort -u
-done
-
-# Find symbols provided by the kernel or modules.
-if [ -x /usr/lib/rpm/redhat/find-provides.ksyms ]; then
-    # If /lib/modules/*/*.ko[.*z|.lzma|.zst], it is a kernel module
-    # If /boot/*, it may be the kernel image itself
-    # (No need to be super precise: find-provides.ksyms filters out the files
-    # it needs to operate on)
-    if printf "%s\n" "$filelist" | grep -q \
-                -e '/lib/modules/.*\.ko$' \
-                -e '/lib/modules/.*\.ko\..*z' \
-                -e '/boot/'
-    then
-        printf "%s\n" "$filelist" | /usr/lib/rpm/redhat/find-provides.ksyms
-    fi
-fi
-
-exit 0
+/usr/lib/rpm/rpmdeps --define="_use_internal_dependency_generator 1" --provides
