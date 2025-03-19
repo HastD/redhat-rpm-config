@@ -205,7 +205,7 @@ for k,_ in pairs(stripped_flags) do print(k .. " ") end
     diff -u $file.backup $file && mv $file.backup $file \
     %{__sed} --in-place=.backup '1{$!N;$!N};$!N;s/int x = 1;\\nint y = 0;\\nint z;\\nint nan;/volatile int x = 1; volatile int y = 0; volatile int z, nan;/;P;D' $file; \
     diff -u $file.backup $file && mv $file.backup $file \
-    %{__sed} --in-place=.backup 's#^lt_cv_sys_global_symbol_to_cdecl=.*#lt_cv_sys_global_symbol_to_cdecl="sed -n -e '"'"'s/^T .* \\\\(.*\\\\)$/extern int \\\\1();/p'"'"' -e '"'"'s/^$symcode* .* \\\\(.*\\\\)$/extern char \\\\1;/p'"'"'"#' $file; \
+    %{__sed} -r --in-place=.backup '/lt_cv_sys_global_symbol_to_cdecl=/s#(".*"|'"'"'.*'"'"')#"sed -n -e '"'"'s/^T .* \\\\(.*\\\\)$/extern int \\\\1();/p'"'"' -e '"'"'s/^$symcode* .* \\\\(.*\\\\)$/extern char \\\\1;/p'"'"'"#' $file; \
     diff -u $file.backup $file && mv $file.backup $file \
   done
 
