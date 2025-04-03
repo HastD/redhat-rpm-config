@@ -726,7 +726,8 @@ The macros `%{extension_cflags}`, `%{extension_cxxflags}`,
 flags that have been adjusted for compatibility with alternative
 toolchains.
 
-Currently the -fexceptions and -fcf-protection flags are preserved
+Currently the -fexceptions, -fcf-protection (on x86_64) and
+-mbranch-protection=standard (on aarch64) flags are preserved
 for binary compatibility with the languages the extensions are
 built against.
 

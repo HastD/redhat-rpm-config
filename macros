@@ -122,7 +122,7 @@ local flags = rpm.expand("%{build_" .. name .. "}")
 local stripped_flags = { }
 --iterate over the individual flags and store the ones we want in the table as unique keys
 for flag in flags:gmatch("%S+") do
-  if flag:find("^%-fexceptions") or flag:find("^%-fcf%-protection") then
+  if flag:find("^%-fexceptions") or flag:find("^%-fcf%-protection") or flag:find("^%-mbranch%-protection=standard")  then
     stripped_flags[flag] = true end
   end
 --print out the finalized set of flags for use by the extension builders
