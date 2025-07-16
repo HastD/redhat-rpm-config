@@ -5,7 +5,7 @@ and how to use them.
 
 # Using RPM build flags
 
-The %set_build_flags macro sets the environment variables `CFLAGS`,
+The `%set_build_flags` macro sets the environment variables `CFLAGS`,
 `CXXFLAGS`, `FFLAGS`, `FCFLAGS`, `VALAFLAGS`, `LDFLAGS` and `LT_SYS_LIBRARY_PATH` to
 the value of their corresponding rpm macros. `%set_build_flags` is automatically
 called prior to the `%build`, `%check`, and `%install` phases so these flags can be
@@ -462,6 +462,36 @@ These steps can be skipped by undefining the corresponding macros:
   invoked yet).
 * `__brp_remove_la_files`: This step removes libtool-generated `.la`
   files from the installed files.
+
+### Adding package-specific flags
+
+In the case you only want to append to the existing flags, use:
+
+* `%_pkg_extra_cflags` to append to the `%{build_cflags}` macro
+* `%_pkg_extra_cxxflags` to append to the `%{build_cxxflags}` macro
+* `%_pkg_extra_fflags` to append to the `%{build_fflags}` macro
+* `%_pkg_extra_ldflags` to append to the `%{build_ldflags}` macro
+
+This approach has a significant benefit over editing and re-exporting the
+shell variables "by hand". And that is that it is propagated to all calls
+of the `%set_build_flags` macro, in every section, in the whole SPECfile.
+(instead of just the lines after the "export CFLAGS" etc. call until the end
+of the current section)
+
+### Adding distribution-specific flags
+
+For the specific use-case of distributions forked from Fedora, there is a
+set of macros nearly identical to the package-specific macros, that allows
+for setting an extra set of distibution-wide flags, without changing the
+existing ones:
+
+* `%_distro_extra_cflags` to append to the `%{build_cflags}` macro
+* `%_distro_extra_cxxflags` to append to the `%{build_cxxflags}` macro
+* `%_distro_extra_fflags` to append to the `%{build_fflags}` macro
+* `%_distro_extra_ldflags` to append to the `%{build_ldflags}` macro
+
+These macros are never intended to be used by individual package maintainers.
+The distribution-specific flags are applied before the package-specific flags.
 
 # Individual compiler flags
 
