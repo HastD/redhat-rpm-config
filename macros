@@ -27,6 +27,7 @@
 %_include_gdb_index     1
 %_debugsource_packages  1
 %_debuginfo_subpackages 1
+%_preserve_static_debuginfo 1
 
 # GCC toolchain
 %__cc_gcc gcc
@@ -289,7 +290,7 @@ for k,_ in pairs(stripped_flags) do print(k .. " ") end
     %{?__brp_strip_comment_note} \
     } \
     %{?__brp_strip_lto} \
-    %{?__brp_strip_static_archive} \
+    %{!?_preserve_static_debuginfo: %{?__brp_strip_static_archive} } \
     %{?__brp_check_rpaths} \
     %{?__brp_mangle_shebangs} \
     %{?__brp_remove_la_files} \

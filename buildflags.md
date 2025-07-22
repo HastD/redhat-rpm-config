@@ -439,7 +439,10 @@ These steps can be skipped by undefining the corresponding macros:
   specified by the `__strip` macro is invoked with the `-g` option on
   ELF object (`.o`) files.
 * `__brp_strip_static_archive`: This is similar to `__brp_strip`, but
-  processes static `.a` archives instead.
+  processes static `.a` archives instead.  This operation is disabled
+  by default, so DWARF is preserved in static libraries for the benefit
+  of programs that link to them.  This may be disabled with a
+  `%undefine _preserve_static_debuginfo` setting.
 * `__brp_strip_comment_note`: This step removes unallocated `.note`
   sections, and `.comment` sections from ELF files.
 * `__brp_strip_lto`: This step removes GCC LTO intermediate representation
