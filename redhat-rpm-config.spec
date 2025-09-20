@@ -130,11 +130,8 @@ Requires: (gcc-plugin-annobin if gcc)
 Requires: (gpgverify if gnupg2)
 
 # for brp-mangle-shebangs
-Requires: %{_bindir}/find
-Requires: %{_bindir}/file
-Requires: %{_bindir}/grep
-Requires: %{_bindir}/sed
-Requires: %{_bindir}/xargs
+Requires: perl >= 5.38
+Requires: perl-File-LibMagic >= 1.23
 
 # -fstack-clash-protection and -fcf-protection require GCC 8.
 Conflicts: gcc < 8.0.1-0.22
