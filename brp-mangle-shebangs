@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 # If using normal root, avoid changing anything.
-if [ -z "$RPM_BUILD_ROOT" -o "$RPM_BUILD_ROOT" = "/" ]; then
+if [[ -z "$RPM_BUILD_ROOT" || "$RPM_BUILD_ROOT" == "/" ]]; then
   exit 0
 fi
 
@@ -17,17 +17,17 @@ usage() {
 
   (
     echo 'usage: brp-mangle-shebangs [--files <regexp>] [--files-from <file>] [--shebangs <regexp>] [--shebangs-from <file>]'
-    if [ "${verbose}" == "yes" ]; then
+    if [[ "${verbose}" == "yes" ]]; then
       echo '  --files: extended regexp of files to ignore'
       echo '  --files-from: file containing a list of extended regexps of files to ignore'
       echo '  --shebangs: extended regexp of shebangs to ignore'
       echo '  --shebangs-from: file containing a list of extended regexps of shebangs to ignore'
     fi
-  ) >>${outfile}
-  exit ${status}
+  ) >>"${outfile}"
+  exit "${status}"
 }
 
-while [ $# -gt 0 ] ; do
+while (( $# > 0 )); do
   case "$1" in
     --files)
       exclude_files="${2}"
@@ -74,26 +74,24 @@ cd "$RPM_BUILD_ROOT"
 # We take care to not fork/exec thousands of "file"s and "grep"s,
 # but run just two of them.
 # (Take care to exclude filenames which would mangle "file" output).
-find -executable -type f ! -path '*:*' ! -path $'*\n*' \
-| file -N --mime-type -f - \
-| grep -P ".+(?=: (text/|application/javascript))" \
+find . -type f -executable ! -path $'*\t*' ! -path $'*\n*' \
+| file -N -F $'\t' --mime-type -f - \
+| grep -oP '^[^\t]+?(?=\t (?:text/|application/javascript))' \
 | {
 fail=0
-while IFS= read -r line; do
-  f=${line%%:*}
-
+while IFS= read -r f; do
   # Remove the dot
   path="${f#.}"
 
-  if [ -n "$exclude_files" ]; then
-    echo "$path" | grep -q -E "$exclude_files" && continue
+  if [[ -n "$exclude_files" ]]; then
+    grep -q -E "$exclude_files" <<<"$path" && continue
   fi
-  if [ -n "$exclude_files_from" ]; then
-    echo "$path" | grep -q -E -f "$exclude_files_from" && continue
+  if [[ -n "$exclude_files_from" ]]; then
+    grep -q -E -f "$exclude_files_from" <<<"$path" && continue
   fi
 
 
-  if ! read shebang_line < "$f"; then
+  if ! IFS= read -r shebang_line < "$f"; then
     echo >&2 "*** WARNING: Cannot read the first line from $f, removing executable bit"
     ts=$(stat -c %y "$f")
     chmod -x "$f"
@@ -102,7 +100,7 @@ while IFS= read -r line; do
   fi
 
   orig_shebang="${shebang_line#\#!}"
-  if [ "$orig_shebang" = "$shebang_line" ]; then
+  if [[ "$orig_shebang" == "$shebang_line" ]]; then
     echo >&2 "*** WARNING: $f is executable but has no shebang, removing executable bit"
     ts=$(stat -c %y "$f")
     chmod -x "$f"
@@ -111,7 +109,7 @@ while IFS= read -r line; do
   fi
 
   # Trim spaces
-  while shebang="${orig_shebang//  / }"; [ "$shebang" != "$orig_shebang" ]; do
+  while shebang="${orig_shebang//  / }"; [[ "$shebang" != "$orig_shebang" ]]; do
     orig_shebang="$shebang"
   done
   # Treat "#! /path/to " as "#!/path/to"
@@ -119,54 +117,54 @@ while IFS= read -r line; do
 
   shebang="$orig_shebang"
 
-  if [ -z "$shebang" ]; then
+  if [[ -z "$shebang" ]]; then
     echo >&2 "*** WARNING: $f is executable but has empty shebang, removing executable bit"
     ts=$(stat -c %y "$f")
     chmod -x "$f"
     touch -d "$ts" "$f"
     continue
   fi
-  if [ -n "${shebang##/*}" ]; then
+  if [[ "$shebang" != /* ]]; then
     echo >&2 "*** ERROR: $f has shebang which doesn't start with '/' ($shebang)"
     fail=1
     continue
   fi
 
-  if ! { echo "$shebang" | grep -q -P "^/(?:usr/)?(?:bin|sbin)/"; }; then
+  if [[ ! "$shebang" =~ ^/(usr/)?s?bin/ ]]; then
     continue
   fi
 
-  if [ -n "$exclude_shebangs" ]; then
-    echo "$shebang" | grep -q -E "$exclude_shebangs" && continue
+  if [[ -n "$exclude_shebangs" ]]; then
+    grep -q -E "$exclude_shebangs" <<<"$shebang" && continue
   fi
-  if [ -n "$exclude_shebangs_from" ]; then
-    echo "$shebang" | grep -q -E -f "$exclude_shebangs_from" && continue
+  if [[ -n "$exclude_shebangs_from" ]]; then
+    grep -q -E -f "$exclude_shebangs_from" <<<"$shebang" && continue
   fi
 
-  # Replace "special" env shebang:
-  # /whatsoever/env -whatever /whatever/foo → /whatever/foo
-  shebang=$(echo "$shebang" | sed -r -e 's@^(.+)/env( -[^ ]+)* /(.+)$@/\3@')
-  # /whatsoever/env -whatever foo → /whatsoever/foo
-  shebang=$(echo "$shebang" | sed -r -e 's@^(.+/)env( -[^ ]+)* (.+)$@\1\3@')
+  # 1. Replace "special" env shebang:
+  #    /whatsoever/env -whatever /whatever/foo → /whatever/foo
+  # 2. /whatsoever/env -whatever foo → /whatsoever/foo
+  # 3. If the shebang now starts with /bin, change it to /usr/bin
+  #    https://bugzilla.redhat.com/show_bug.cgi?id=1581757
+  shebang=$(
+    sed -E \
+      -e 's@^(.+)/env( -[^ ]+)* /(.+)$@/\3@' \
+      -e 's@^(.+/)env( -[^ ]+)* (.+)$@\1\3@' \
+      -e 's@^/bin/@/usr/bin/@' \
+      <<<"$shebang" \
+  )
 
-  # If the shebang now starts with /bin, change it to /usr/bin
-  # https://bugzilla.redhat.com/show_bug.cgi?id=1581757
-  shebang=$(echo "$shebang" | sed -r -e 's@^/bin/@/usr/bin/@')
-
-  # Replace ambiguous python with python2
-  py_shebang=$(echo "$shebang" | sed -r -e 's@/usr/bin/python(\s|$)@/usr/bin/python2\1@')
-
-  if [ "$shebang" != "$py_shebang" ]; then
+  if [[ "$shebang" =~ ^/usr/bin/python([[:space:]]|$) ]]; then
     echo >&2 "*** ERROR: ambiguous python shebang in $path: #!$orig_shebang. Change it to python3 (or python2) explicitly."
     fail=1
-  elif [ "#!$shebang" != "#!$orig_shebang" ]; then
+  elif [[ "$shebang" != "$orig_shebang" ]]; then
     echo "mangling shebang in $path from $orig_shebang to #!$shebang"
     ts=$(stat -c %y "$f")
-    sed -i -e "1c #!$shebang" "$f"
+    sed --sandbox -i -e "1c #!$shebang" "$f"
     touch -d "$ts" "$f"
   fi
 
 done
 
-exit $fail
+exit "$fail"
 }
