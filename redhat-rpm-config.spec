@@ -120,6 +120,7 @@ Requires: tree-sitter-srpm-macros
 Requires: qt5-srpm-macros
 Requires: zig-srpm-macros
 Requires: build-reproducibility-srpm-macros
+Requires: R-srpm-macros
 %endif
 
 Requires: rpm >= 4.19.91
